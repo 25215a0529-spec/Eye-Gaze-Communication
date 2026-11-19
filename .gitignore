@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+tts_env/
+.env
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Logs and personal calibration data
+*.log
+logs/
+
+# Large voice models (download separately, see README)
+models/
+*.onnx
+*.onnx.json
+# Python environments
+.venv/
+.venv311/
+venv/
+__pycache__/
+*.pyc
+# Python virtual environments
+.venv/
+.venv311/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Logs
+logs/
