@@ -5,7 +5,8 @@ from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import QThread, pyqtSignal
 from ui.main_window import AACMainWindow
 from ui.calibration_widget import CalibrationOverlay
-from core.eye_tracker import DualModalityEyeTracker
+from core.eye_tracker import DualModalityEyeTracker, configure_bell
+from ui.bell_button import bell_fraction
 
 
 class GazeTrackingThread(QThread):
@@ -75,6 +76,7 @@ def main():
     screen_geometry = app.primaryScreen().geometry()
     screen_w = screen_geometry.width()
     screen_h = screen_geometry.height()
+    configure_bell(*bell_fraction(screen_w, screen_h))
 
     tracker_thread = GazeTrackingThread(screen_w, screen_h)
     tracker_thread.gaze_updated.connect(window.update_gaze_point)

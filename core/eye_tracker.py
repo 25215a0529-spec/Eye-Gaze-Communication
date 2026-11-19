@@ -17,12 +17,20 @@ import mediapipe as mp
 from mediapipe.python.solutions import face_mesh as mp_face_mesh
 from core.cell_classifier import CellClassifier
 
-# Cell centres as fractions of the screen (match the 3 x 2 card grid in the UI)
+    # Cell centres as fractions of the screen (match the 3 x 2 card grid in the UI)
 CELL_XS = (0.247, 0.50, 0.753)
 CELL_YS = (0.32, 0.77)
-CELLS = [(x, y) for y in CELL_YS for x in CELL_XS]          # index = row * 3 + col
-ORDER = [0, 1, 2, 5, 4, 3, 4, 1, 2, 3, 0, 5]                # 12 dots: every cell twice
+GRID_CELLS = [(x, y) for y in CELL_YS for x in CELL_XS]     # index = row * 3 + col (0..5)
+BELL_CELL = 6                                               # the EMERGENCY bell, top-left
+CELLS = GRID_CELLS + [(0.06, 0.07)]                         # real bell position set by configure_bell()
+ORDER = [0, 1, 2, 5, 4, 3, 6, 4, 1, 2, 3, 0, 5, 6]          # 14 dots: every cell twice
 CALIB_GRID = [CELLS[i] for i in ORDER]                      # used by the calibration screen
+
+
+def configure_bell(fx, fy):
+    """Move the bell cell to where the bell button really is on this screen."""
+    CELLS[BELL_CELL] = (fx, fy)
+    CALIB_GRID[:] = [CELLS[i] for i in ORDER]             # used by the calibration screen
 
 SETTLE_S = 0.55        # seconds to ignore after a dot appears (eye is still moving)
 VOTE_FRAMES = 8        # average the last N frames before deciding

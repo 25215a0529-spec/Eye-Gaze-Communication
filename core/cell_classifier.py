@@ -7,7 +7,7 @@ gives per-frame probabilities that the tracker averages over a few frames."""
 import numpy as np
 
 WINDOW = 8          # frames averaged when judging accuracy (same as runtime voting)
-N_CELLS = 6
+N_CELLS = 7
 
 
 # ----------------------------------------------------------------- features

@@ -7,7 +7,7 @@ EMERGENCY_TEXT = {
         "emergency": "అత్యవసరం",
         "title": "అత్యవసరం!",
         "subtitle": "నాకు వెంటనే సహాయం కావాలి!",
-        "hint": "సహాయకులు: ఆపడానికి కింది బటన్ నొక్కండి",
+        "hint": "ఆపడానికి: కింది బటన్ నొక్కండి, లేదా దాన్ని 3 సెకన్లు చూడండి",
         "stop": "అలారం ఆపండి",
     },
     "en": {
@@ -15,7 +15,7 @@ EMERGENCY_TEXT = {
         "emergency": "EMERGENCY",
         "title": "EMERGENCY!",
         "subtitle": "I need help right now!",
-        "hint": "Caregiver: tap the button below to stop the alarm",
+        "hint": "To stop: tap the button below, or look at it for 3 seconds",
         "stop": "STOP ALARM",
     },
     "hi": {
@@ -23,7 +23,7 @@ EMERGENCY_TEXT = {
         "emergency": "आपातकाल",
         "title": "आपातकाल!",
         "subtitle": "मुझे तुरंत मदद चाहिए!",
-        "hint": "देखभालकर्ता: अलार्म रोकने के लिए नीचे का बटन दबाएँ",
+        "hint": "रोकने के लिए: नीचे का बटन दबाएँ, या उसे 3 सेकंड देखें",
         "stop": "अलार्म बंद करें",
     },
 }
