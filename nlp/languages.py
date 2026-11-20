@@ -3,15 +3,6 @@ Language data for the AAC gaze interface.
 Every sentence is written in full, in Subject-Object-Verb (SOV) order,
 so a doctor can review the exact wording here. Edit this file only to
 change a sentence or add an item.
-
-NOTE: English is naturally SVO. The English sentences are deliberately
-SOV ("I water want") because of the clinical requirement - confirm with
-the doctor. Telugu and Hindi are naturally SOV.
-
-Menu entry "type":
-    subject   highlight only (the "I / me" card)
-    category  opens a sub-menu ("items")
-    sentence  speaks "sentence" immediately
 """
 
 
@@ -35,11 +26,12 @@ TELUGU = {
     "menu": [
         {"id": "me", "label": "నాకు", "type": "subject"},
         {"id": "food", "label": "ఆహారం", "type": "category", "items": [
-            _item("dal_roti", "పప్పు చపాతీ", "నాకు పప్పు చపాతీ కావాలి"),
-            _item("rice_sabzi", "అన్నం కూర", "నాకు అన్నం కూర కావాలి"),
+            _item("dal", "పప్పు", "నాకు పప్పు కావాలి"),
+            _item("roti", "రొట్టె", "నాకు రొట్టె కావాలి"),
+            _item("rice", "అన్నం", "నాకు అన్నం కావాలి"),
+            _item("curry", "కూర", "నాకు కూర కావాలి"),
             _item("snack", "అల్పాహారం", "నాకు అల్పాహారం కావాలి"),
             _item("biscuit", "బిస్కెట్", "నాకు బిస్కెట్ కావాలి"),
-            _item("dal_bhat", "పప్పు అన్నం", "నాకు పప్పు అన్నం కావాలి"),
             _item("tiffin", "టిఫిన్", "నాకు టిఫిన్ కావాలి"),
             _item("something_else", "ఇంకేదైనా", "నాకు ఇంకేదైనా కావాలి"),
         ]},
@@ -86,11 +78,12 @@ ENGLISH = {
     "menu": [
         {"id": "me", "label": "I", "type": "subject"},
         {"id": "food", "label": "Food", "type": "category", "items": [
-            _item("dal_roti", "Dal Roti", "I want dal roti"),
-            _item("rice_sabzi", "Rice Curry", "I want rice curry"),
+            _item("dal", "Dal", "I want dal"),
+            _item("roti", "Roti", "I want roti"),
+            _item("rice", "Rice", "I want rice"),
+            _item("curry", "Curry", "I want curry"),
             _item("snack", "Snacks", "I want snacks"),
             _item("biscuit", "Biscuit", "I want a biscuit"),
-            _item("dal_bhat", "Dal Rice", "I want dal rice"),
             _item("tiffin", "Tiffin", "I want tiffin"),
             _item("something_else", "Something Else", "I want something else"),
         ]},
@@ -137,11 +130,12 @@ HINDI = {
     "menu": [
         {"id": "me", "label": "मुझे", "type": "subject"},
         {"id": "food", "label": "खाना", "type": "category", "items": [
-            _item("dal_roti", "दाल रोटी", "मुझे खाने में दाल रोटी चाहिए"),
-            _item("rice_sabzi", "चावल सब्ज़ी", "मुझे खाने में चावल सब्ज़ी चाहिए"),
+            _item("dal", "दाल", "मुझे खाने में दाल चाहिए"),
+            _item("roti", "रोटी", "मुझे खाने में रोटी चाहिए"),
+            _item("rice", "चावल", "मुझे खाने में चावल चाहिए"),
+            _item("curry", "सब्ज़ी", "मुझे खाने में सब्ज़ी चाहिए"),
             _item("snack", "नाश्ता", "मुझे नाश्ता चाहिए"),
             _item("biscuit", "बिस्कुट", "मुझे बिस्कुट चाहिए"),
-            _item("dal_bhat", "दाल भात", "मुझे खाने में दाल भात चाहिए"),
             _item("tiffin", "टिफ़िन", "मुझे टिफ़िन चाहिए"),
             _item("something_else", "कुछ और", "मुझे खाने में कुछ और चाहिए"),
         ]},

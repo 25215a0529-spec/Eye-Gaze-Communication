@@ -1,7 +1,6 @@
-PyQt6
-opencv-python
-mediapipe==0.10.9
-protobuf==3.20.3
-numpy
-pyttsx3
-pygame>=2.5.0
+PyQt6>=6.7.0
+opencv-python>=4.10.0
+mediapipe==0.10.14
+numpy>=1.26.4,<2.0.0
+pyttsx3>=2.90
+pygame>=2.6.0

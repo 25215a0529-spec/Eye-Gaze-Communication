@@ -2,7 +2,7 @@ import math
 import time
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QGridLayout, QVBoxLayout,
-    QHBoxLayout, QLabel, QStackedWidget, QSizePolicy, QApplication, QPushButton
+    QHBoxLayout, QLabel, QStackedWidget, QSizePolicy, QApplication
 )
 from PyQt6.QtCore import Qt, QPoint, QRect, QTimer, pyqtSignal
 from PyQt6.QtGui import QPainter, QColor, QPen, QImage, QPixmap
@@ -24,30 +24,22 @@ THEME = {
     "card_back": BACK_COLOR,
 }
 
-DWELL_MS = 1300          # time you must look at a card to select it
-SNAP_MAX_PX = 220        # gaze farther than this from every card = nothing selected
-HYSTERESIS_PX = 45       # a new card must be this much closer to steal the highlight
-LOST_GAZE_S = 0.6        # no tracking update for this long -> cancel any dwell
-SHOW_POINTER = True      # False = hide the floating dot; only the highlighted card shows the gaze
+DWELL_MS = 1300
+SNAP_MAX_PX = 220
+HYSTERESIS_PX = 45
+LOST_GAZE_S = 0.6
+SHOW_POINTER = True
 
-ITEM_SLOTS = [(0, 0), (0, 1), (0, 2), (1, 0)]   # 4 items per page; (1,1)=NEXT, (1,2)=BACK
+ITEM_SLOTS = [(0, 0), (0, 1), (0, 2), (1, 0)]
+ICON_ALIAS = {"back": "pain_back", "rice": "dal_bhat"}
 
-# card id -> picture name, when the id is also used by another picture
-ICON_ALIAS = {"back": "pain_back"}    # pain in the BACK (body), not the back arrow
-
-# Main menu: ids come from nlp/languages.py ("yesno" opens the Yes/No page)
 MAIN_ORDER = ["food", "water", "go", "pain", "help", "yesno"]
 MAIN_SLOTS = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]
-
-# Items defined in languages.py that are NOT shown in the sub-menus
-# (your Hindi list had no tiffin). Remove "tiffin" from this set to show it.
 HIDDEN_ITEMS = {"tiffin"}
 
-# "Continue" label on the page shown right after a language is chosen
-# (please have a native speaker check the Telugu and Hindi words)
-CONTINUE_TEXT = {"te": "కొనసాగించండి", "en": "Continue", "hi": "आगे बढ़ें"}
+LANG_WORD = {"te": "భాష", "en": "Language", "hi": "भाषा"}
+BACK_WORD = {"te": "వెనుకకు", "en": "Back", "hi": "वापस"}
 
-# Page numbers inside the stacked widget
 PAGE_MAIN = 0
 PAGE_SUB = 1
 PAGE_OUTPUT = 2
@@ -55,23 +47,23 @@ PAGE_LANGUAGE = 3
 PAGE_SPLASH = 4
 PAGE_EMERGENCY = 5
 
-STOP_DWELL_MS = 3000                      # patient stops the alarm by looking this long
-EMERGENCY_DWELL_MS = 1800                 # emergency card needs a longer look (no accidents)
+STOP_DWELL_MS = 3000
+EMERGENCY_DWELL_MS = 1800
 STOP_KEYS = (Qt.Key.Key_Space, Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_S)
-FLASH_COLORS = ("#B3261E", "#E8736B")     # alarm screen alternates between these
+FLASH_COLORS = ("#B3261E", "#E8736B")
 
 
 class EmergencyPage(QWidget):
-    """Full-screen alarm page. Only the STOP button (tap/click) or a key stops the alarm."""
+    """Full-screen alarm page."""
 
     def __init__(self):
         super().__init__()
         self.setObjectName("emergencyPage")
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)   # paint the red background
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
 
 class GazePointerOverlay(QWidget):
-    """Small always-on-top pointer that glides (no jumping) to the gaze point."""
+    """Small always-on-top pointer that glides to the gaze point."""
 
     def __init__(self):
         super().__init__()
@@ -120,19 +112,18 @@ class AACMainWindow(QMainWindow):
 
         self.speech_engine = SpeechEngine()
         self.voice = VoiceOutput()
-        self.lang = None               # selected language dict (None until chosen)
-        self.active_category = None    # id of the open sub-menu (e.g. "food")
+        self.lang = None
+        self.active_category = None
         self.cards = []
         self.active_card = None
         self.sub_page = 0
-        self.prev_view = ("main",)     # where BACK on the output screen returns to
+        self.prev_view = ("main",)
         self.page_locked = False
         self.auto_return_timer = None
         self._last_gaze_t = time.monotonic()
-        # start-up stage: "waiting" -> "splash" -> "calibrating" -> "running"
         self.stage = "waiting"
-        self.calibrating = False       # True while the calibration screen is open
-        self.emergency = False         # True while the alarm is sounding
+        self.calibrating = False
+        self.emergency = False
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -140,15 +131,20 @@ class AACMainWindow(QMainWindow):
         self.root_layout.setContentsMargins(40, 20, 40, 20)
         self.central_widget.setStyleSheet(f"background-color: {THEME['bg_window']};")
 
-        # cards sit in the middle ~76% of the screen: smaller eye angles = better accuracy
         screen_w = QApplication.primaryScreen().geometry().width()
         pad = max(0, int(screen_w * 0.12) - 40)
 
-        # Header with camera preview
+        # Header with emergency bell + active language indicator + camera preview
         self.header_layout = QHBoxLayout()
-        self.bell = BellButton(dwell_time_ms=EMERGENCY_DWELL_MS)   # EMERGENCY, always on screen
+        self.bell = BellButton(dwell_time_ms=EMERGENCY_DWELL_MS)
         self.bell.dwell_completed.connect(lambda *_: self.trigger_emergency())
         self.header_layout.addWidget(self.bell)
+
+        self.header_title = QLabel("")
+        self.header_title.setStyleSheet(
+            f"color: #8A94A6; font-family: {UI_FONT}; font-size: 20px; font-weight: bold; padding-left: 14px;"
+        )
+        self.header_layout.addWidget(self.header_title)
         self.header_layout.addStretch()
 
         self.cam_preview = QLabel("Camera Loading...")
@@ -234,7 +230,7 @@ class AACMainWindow(QMainWindow):
             self.language_grid.setColumnStretch(c, 1)
         self.language_layout.addWidget(self.language_grid_container, stretch=1)
 
-        # ---------------- Page 4: Splash (app name) ----------------
+        # ---------------- Page 4: Splash ----------------
         self.splash_page = SplashPage()
         self.splash_page.finished.connect(self._after_splash)
 
@@ -254,7 +250,6 @@ class AACMainWindow(QMainWindow):
         self.emergency_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.emergency_hint.setWordWrap(True)
         em_layout.addWidget(self.emergency_hint, stretch=1)
-        # STOP: the caregiver taps / clicks it, the patient looks at it for STOP_DWELL_MS
         self.stop_card = DwellCard("STOP ALARM", key="__stop__", bg_color="#F4F1E8",
                                    text_color="#8C1D18", dwell_time_ms=STOP_DWELL_MS, font_px=56)
         self.stop_card.setMinimumHeight(220)
@@ -274,13 +269,11 @@ class AACMainWindow(QMainWindow):
 
         self.cursor_overlay = GazePointerOverlay() if SHOW_POINTER else None
 
-        # safety: if tracking stops (face lost), never let a dwell finish by itself
         self.watchdog = QTimer(self)
         self.watchdog.setInterval(250)
         self.watchdog.timeout.connect(self._check_gaze_alive)
         self.watchdog.start()
 
-        # Blank dark screen until run.py calls start_flow(). Nothing can be selected yet.
         self._show_header(False)
         self.stacked_widget.setCurrentIndex(PAGE_SPLASH)
 
@@ -292,7 +285,7 @@ class AACMainWindow(QMainWindow):
         super().closeEvent(event)
 
     def keyPressEvent(self, event):
-        if self.emergency:                       # caregiver stops the alarm
+        if self.emergency:
             if event.key() in STOP_KEYS:
                 self.stop_emergency()
             return
@@ -300,7 +293,7 @@ class AACMainWindow(QMainWindow):
             self.close()
         elif event.key() in (Qt.Key.Key_C, Qt.Key.Key_F5):
             self.trigger_recalibration()
-        elif event.key() == Qt.Key.Key_L:          # caretaker: change language
+        elif event.key() == Qt.Key.Key_L:
             if self.stage == "running":
                 self._stop_speech()
                 self.render_language_menu()
@@ -311,7 +304,6 @@ class AACMainWindow(QMainWindow):
                 self.showFullScreen()
 
     def lock_page_briefly(self, ms=900):
-        """Short pause after a page change so the eyes can settle."""
         self.page_locked = True
         self._set_active_card(None)
         for card in self.cards:
@@ -353,7 +345,6 @@ class AACMainWindow(QMainWindow):
 
     # ---------------------------------------------------------- language helpers
     def _ui(self, key, default=""):
-        """Small interface strings (BACK, NEXT ...) in the selected language."""
         lang = self.lang or LANGUAGES[LANGUAGE_ORDER[0]]
         return lang["ui"].get(key, default)
 
@@ -363,43 +354,40 @@ class AACMainWindow(QMainWindow):
     def _main_label(self, entry_id):
         if entry_id == "yesno":
             yes, no = self._menu_entry("yes"), self._menu_entry("no")
-            return f"{yes['label']} / {no['label']}"
+            lang_word = LANG_WORD.get(self.lang["code"], "Language")
+            return f"{yes['label']} / {no['label']} / {lang_word}"
         return self._menu_entry(entry_id)["label"]
 
     def _speak(self, sentence):
-        """All three languages: play the pre-generated clip (female voice);
-        the speech engine falls back to a system voice only if a clip is missing."""
         code = self.lang["code"]
         self.voice.stop()
         self.speech_engine.speak(sentence, code)
+
     def _stop_speech(self):
         self.voice.stop()
         self.speech_engine.stop()
 
     def _show_header(self, visible: bool):
-        """The title and camera preview are hidden during the splash (name only)."""
         self.bell.setVisible(visible)
+        self.header_title.setVisible(visible)
         self.cam_preview.setVisible(visible)
 
     def trigger_recalibration(self):
-        """Caretaker presses C (or F5): stop any voice and run the calibration screen."""
-        if self.stage != "running" or self.emergency:   # start-up flow handles calibration
+        if self.stage != "running" or self.emergency:
             return
         self._stop_speech()
         self.calibrating = True
         self.recalibrate_requested.emit()
 
     # ------------------------------------------------------------------- pages
-    # Start-up flow:  splash -> calibration -> language page -> menus
     def start_flow(self):
-        """Called once by run.py after the window is shown."""
         if self.stage != "waiting":
             return
         self.show_splash()
 
     def show_splash(self):
         self.stage = "splash"
-        self.calibrating = True          # nothing can be selected during the splash
+        self.calibrating = True
         self._stop_auto_return()
         self.clear_active_cards()
         self._show_header(False)
@@ -407,18 +395,19 @@ class AACMainWindow(QMainWindow):
         self.splash_page.start()
 
     def _after_splash(self):
-        """Splash finished: open the calibration screen (run.py listens to this signal)."""
         self.stage = "calibrating"
         self.calibrating = True
         self.recalibrate_requested.emit()
 
     def on_calibration_done(self, accuracy=None):
-        """Called by run.py when the calibration screen closes."""
+        if accuracy is None and self.stage == "calibrating":
+            self.recalibrate_requested.emit()
+            return
         self.calibrating = False
-        if self.stage == "calibrating":          # first calibration of this run
+        if self.stage == "calibrating":
             self.stage = "running"
             self.render_language_menu()
-        else:                                    # a re-calibration during use
+        else:
             self.lock_page_briefly(1500)
 
     def render_language_menu(self, *_):
@@ -426,6 +415,7 @@ class AACMainWindow(QMainWindow):
         self.clear_active_cards()
         self.lang = None
         self.active_category = None
+        self.header_title.setText("AAC Assistive Gaze Interface")
         self._show_header(True)
         self.stacked_widget.setCurrentIndex(PAGE_LANGUAGE)
         self._clear_grid(self.language_grid)
@@ -439,49 +429,22 @@ class AACMainWindow(QMainWindow):
             self.cards.append(card)
         self._update_bell_caption()
 
-        self.lock_page_briefly(3000)
-
-    def select_language(self, code: str):
-        self.lang = LANGUAGES[code]
-        self.speech_engine.set_language(code)
-        self._update_bell_caption()
-        self.render_language_confirm()
-
-    def render_language_confirm(self):
-        """After picking a language: CONTINUE, or go BACK to the language page.
-        The tracker only reaches the 6 card positions used in calibration, so
-        this page uses big cards inside those positions (no footer button)."""
-        self._stop_auto_return()
-        self.clear_active_cards()
-        self.active_category = None
-        self._show_header(True)
-        self.stacked_widget.setCurrentIndex(PAGE_SUB)
-        self._clear_grid(self.sub_grid)
-
-        # left column: the language that was chosen (not selectable)
-        name = QLabel(self.lang["name"])
-        name.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        name.setStyleSheet(
-            f"color: #B0BEC5; font-family: {UI_FONT}; font-size: 64px; font-weight: bold;"
-        )
-        self.sub_grid.addWidget(name, 0, 0, 2, 1)
-
-        self._make_card(CONTINUE_TEXT.get(self.lang["code"], "Continue"), CARD_PALETTE[1],
-                        self.sub_grid, 0, 1, self.render_main_menu, 2, 1,
-                        key="__continue__", font_px=40, icon="continue")
-        self._make_card("←  " + self._ui("change_language", "Change language"),
-                        THEME["card_back"], self.sub_grid, 0, 2,
-                        self.go_back_to_language, 2, 1, key="__lang__", font_px=34,
-                        icon="language")
         self.lock_page_briefly(1500)
 
+    def select_language(self, code: str):
+        """Directly enter the selected language's main menu without confirmation slide."""
+        self.lang = LANGUAGES[code]
+        self.speech_engine.set_language(code)
+        self.header_title.setText(f"AAC Assistive Gaze Interface  •  {self.lang['name']}")
+        self._update_bell_caption()
+        self.render_main_menu()
+
     def go_back_to_language(self, *_):
-        """Wrong language picked: return to the language page (no re-calibration)."""
         self._stop_speech()
         self.render_language_menu()
 
     def render_main_menu(self, *_):
-        if self.lang is None:                 # no language chosen yet
+        if self.lang is None:
             self.render_language_menu()
             return
 
@@ -526,22 +489,45 @@ class AACMainWindow(QMainWindow):
         self.lock_page_briefly()
 
     def render_yes_no(self):
-        """Reply page: [Yes] [No] [Change language] over one wide [BACK]."""
+        """Exact layout from reference image:
+        Col 0 (full height): Yes | Col 1 (full height): No | Col 2 top: Language | Col 2 bottom: Back
+        """
         self._stop_auto_return()
         self.clear_active_cards()
         self.active_category = None
         self.stacked_widget.setCurrentIndex(PAGE_SUB)
         self._clear_grid(self.sub_grid)
+
+        code = self.lang["code"]
         yes, no = self._menu_entry("yes"), self._menu_entry("no")
-        self._make_card(yes["label"], CARD_PALETTE[1], self.sub_grid, 0, 0,
-                        self.handle_yesno_selection, key="yes", icon="yes")
-        self._make_card(no["label"], CARD_PALETTE[4], self.sub_grid, 0, 1,
-                        self.handle_yesno_selection, key="no", icon="no")
-        self._make_card("←  " + self._ui("change_language", "Change language"), CARD_PALETTE[3],
-                        self.sub_grid, 0, 2, self.go_back_to_language, key="__lang__",
-                        icon="language", font_px=32)
-        self._make_card(self._ui("back", "BACK"), THEME["card_back"], self.sub_grid, 1, 0,
-                        lambda *_: self.render_main_menu(), 1, 3, key="__back__", icon="back")
+        lang_label = LANG_WORD.get(code, "Language")
+        back_label = BACK_WORD.get(code, self._ui("back", "Back"))
+
+        # Col 0 (full height): Yes
+        self._make_card(
+            yes["label"], "#A5C9B4", self.sub_grid, 0, 0,
+            self.handle_yesno_selection, rowspan=2, colspan=1,
+            key="yes", font_px=54, icon="yesno_yes"
+        )
+        # Col 1 (full height): No
+        self._make_card(
+            no["label"], "#E2B4BD", self.sub_grid, 0, 1,
+            self.handle_yesno_selection, rowspan=2, colspan=1,
+            key="no", font_px=54, icon="yesno_no"
+        )
+        # Col 2, Top: Language
+        self._make_card(
+            lang_label, "#E5BC96", self.sub_grid, 0, 2,
+            self.go_back_to_language, rowspan=1, colspan=1,
+            key="__lang__", font_px=44, icon="yesno_lang"
+        )
+        # Col 2, Bottom: Back
+        self._make_card(
+            back_label, "#B6BCC8", self.sub_grid, 1, 2,
+            lambda *_: self.render_main_menu(), rowspan=1, colspan=1,
+            key="__back__", font_px=44, icon="yesno_back"
+        )
+
         self.lock_page_briefly()
 
     # ------------------------------------------------------------- emergency alarm
@@ -559,8 +545,6 @@ class AACMainWindow(QMainWindow):
                 and self.bell.isVisible())
 
     def trigger_emergency(self, *_):
-        """Loud alarm + flashing red screen. Stops with the STOP ALARM card: a caregiver taps /
-        clicks it (or presses Space / Enter / S), the patient looks at it for 3 seconds."""
         if self.emergency:
             return
         self.emergency = True
@@ -588,7 +572,7 @@ class AACMainWindow(QMainWindow):
         self._flash_step()
         self.flash_timer.start()
         alarm.start()
-        self.lock_page_briefly(2500)       # no accidental stop right after the alarm starts
+        self.lock_page_briefly(2500)
 
     def _flash_step(self):
         self._flash_on = not self._flash_on
@@ -647,8 +631,6 @@ class AACMainWindow(QMainWindow):
         self.output_label.setText(sentence)
         self.stacked_widget.setCurrentIndex(PAGE_OUTPUT)
 
-        # BACK label in the chosen language (text_label is what the card re-shows
-        # after its green "selected" flash, so it must be updated too)
         back = self._ui("back", "BACK")
         back_text = back if back.upper() == "BACK" else f"{back} (BACK)"
         self.output_back_btn.text_label = back_text
@@ -670,8 +652,6 @@ class AACMainWindow(QMainWindow):
         self.lock_page_briefly()
 
     def go_back_from_output(self):
-        """BACK on the sentence screen: silence the voice at once and return to the
-        menu the sentence came from, so a wrong choice is fixed in ONE step."""
         self._stop_speech()
         self._stop_auto_return()
         view = self.prev_view
@@ -695,7 +675,6 @@ class AACMainWindow(QMainWindow):
         self.cam_preview.setPixmap(pixmap)
 
     def _card_distance(self, card, pt: QPoint) -> float:
-        """0 if the gaze is inside the card, else distance (px) to its nearest edge."""
         r = QRect(card.mapToGlobal(QPoint(0, 0)), card.size())
         dx = max(r.left() - pt.x(), 0, pt.x() - r.right())
         dy = max(r.top() - pt.y(), 0, pt.y() - r.bottom())
@@ -719,13 +698,11 @@ class AACMainWindow(QMainWindow):
         if self.cursor_overlay is not None:
             self.cursor_overlay.move_to_gaze(pt)
 
-        if self.calibrating:       # splash / calibration screen: no card can be selected
+        if self.calibrating:
             self._set_active_card(None)
             return
-        if is_blinking:        # a normal blink must not cancel the selection
+        if is_blinking:
             return
-        # candidates: this page's cards (not while the page is settling) + the EMERGENCY bell,
-        # which is always available. On the alarm screen only the STOP card counts.
         candidates = [] if self.page_locked else list(self.cards)
         if self._bell_active():
             candidates.append(self.bell)
@@ -735,7 +712,6 @@ class AACMainWindow(QMainWindow):
         if self.active_card not in candidates:
             self.active_card = None
 
-        # nearest card to the gaze point
         best_card, best_d = min(((c, self._card_distance(c, pt)) for c in candidates),
                                 key=lambda t: t[1])
         if best_d > SNAP_MAX_PX:
@@ -747,6 +723,5 @@ class AACMainWindow(QMainWindow):
             self._set_active_card(best_card)
         elif best_card is not self.active_card:
             cur_d = self._card_distance(self.active_card, pt)
-            # switch only if the new card is CLEARLY closer (hysteresis = no flicker)
             if best_d + HYSTERESIS_PX < cur_d:
                 self._set_active_card(best_card)
